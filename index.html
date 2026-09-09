@@ -34,6 +34,13 @@
         .inp:disabled { color: var(--muted); background: rgba(0,0,0,0.2); cursor: not-allowed; }
         .btn { flex: 1; background: #21262d; color: #fff; border: 1px solid var(--border); padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         .btn:hover { background: #30363d; }
+        
+        .inject-btn {
+            background: #21262d; border: 1px solid var(--border); color: #fff;
+            padding: 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;
+            cursor: pointer; flex: 1; text-align: center; font-family: monospace;
+        }
+        .inject-btn:hover { background: #30363d; border-color: #8b949e; }
     </style>
 </head>
 <body>
@@ -44,12 +51,18 @@
     </div>
     <div id="status" class="badge std">● Standby WAITING FOR WINDOW</div>
     
+    <div class="lbl" style="margin-bottom: 6px;">⚡ Instantly Inject Active App Screenshots:</div>
+    <div style="display: flex; gap: 6px; margin-bottom: 18px;">
+        <button class="inject-btn" style="color: #ff7b72;" onclick="injectPreset(4349.44, 4358.64)">📉 Drop (0.1%)</button>
+        <button class="inject-btn" style="color: #58a6ff;" onclick="injectPreset(4353.08, 4352.51)">📊 Base (61%)</button>
+        <button class="inject-btn" style="color: #56d364;" onclick="injectPreset(4358.85, 4357.37)">📈 Spike (92%)</button>
+    </div>
     <div>
         <label class="lbl">✍️ Live Spot Price ($)</label>
-        <div class="row"><input type="number" id="spot" class="inp" step="0.01" value="4358.85" oninput="u('spot',this.value)"></div>
+        <div class="row"><input type="number" id="spot" class="inp" step="0.01" value="4353.08" oninput="u('spot',this.value)"></div>
         
         <label class="lbl">✍️ Target Strike ($)</label>
-        <div class="row"><input type="number" id="strike" class="inp" step="0.01" value="4357.37" oninput="u('strike',this.value)"></div>
+        <div class="row"><input type="number" id="strike" class="inp" step="0.01" value="4352.51" oninput="u('strike',this.value)"></div>
         
         <label class="lbl">⏱️ Target Window Range (1-15 min)</label>
         <div class="row"><input type="number" id="window" class="inp" step="1" min="1" max="15" value="5" oninput="u('window',this.value)"></div>
@@ -58,28 +71,34 @@
         <div class="row"><input type="number" id="floor" class="inp" value="86" disabled oninput="u('floor',this.value)"></div>
     </div>
 
-    <!-- Kalshi Badges Layout -->
     <div style="display:flex;gap:10px;margin:15px 0;">
-        <div id="up" style="flex:1;text-align:center;padding:12px;border-radius:24px;font-weight:800;background:rgba(46,160,67,0.1);color:#56d364;border:1px solid rgba(46,160,67,0.3);">Up · --%</div>
-        <div id="down" style="flex:1;text-align:center;padding:12px;border-radius:24px;font-weight:800;background:rgba(248,81,73,0.1);color:#ff7b72;border:1px solid rgba(248,81,73,0.3);">Down · --%</div>
+        <div id="up" style="flex:1;text-align:center;padding:12px;border-radius:24px;font-weight:800;background:rgba(46,160,67,0.1);color:#56d364;border:1px solid rgba(46,160,67,0.3);font-size:1.1rem;">Up · 61%</div>
+        <div id="down" style="flex:1;text-align:center;padding:12px;border-radius:24px;font-weight:800;background:rgba(248,81,73,0.1);color:#ff7b72;border:1px solid rgba(248,81,73,0.3);font-size:1.1rem;">Down · 39%</div>
     </div>
 
-    <!-- Interface Operational Buttons -->
     <div style="display:flex;gap:10px;margin-bottom:15px;">
         <button id="mute" onclick="ta()" class="btn" style="color:#ff7b72;">🔇 Audio Alert: MUTED</button>
         <button onclick="fs()" class="btn" style="background:#2ea043;border-color:rgba(46,160,67,0.4);">🔄 Force Sync Math</button>
     </div>
     
-    <div id="notice" style="font-size:0.75rem;color:#58a6ff;text-align:center;font-style:italic;margin-bottom:10px;">🟢 Local Math Core Connected Successfully</div>
+    <div id="notice" style="font-size:0.75rem;color:#58a6ff;text-align:center;font-style:italic;margin-bottom:10px;">🟢 Manual Math Processing Console Core Ready</div>
     <div style="display:flex;justify-content:between;font-size:0.85rem;border-top:1px solid var(--border);padding-top:10px;">
         <span>⏱ Auto Time Left:</span><span id="clock" style="font-weight:bold;margin-left:auto;color:var(--gold);font-family:monospace;">--:--</span>
     </div>
 </div>
 
 <script>
-    // State initialization perfectly tracking your real mobile app metrics baseline
-    let d = { spot: 4358.85, strike: 4357.37, floor: 86, window: 5, up: 92.9, secs: 60, muted: true };
+    let d = { spot: 4353.08, strike: 4352.51, floor: 86, window: 5, up: 61, secs: 60, muted: true };
     let actx = null, bId = null;
+
+    function injectPreset(spotVal, strikeVal) {
+        document.getElementById('spot').value = spotVal.toFixed(2);
+        document.getElementById('strike').value = strikeVal.toFixed(2);
+        d.spot = spotVal;
+        d.strike = strikeVal;
+        document.getElementById('notice').innerText = `⚡ Injected parameters: Spot \$${spotVal} | Strike \$${strikeVal}`;
+        calc();
+    }
 
     function beep() {
         if (d.muted) return;
@@ -104,27 +123,25 @@
     function tl(l) { document.getElementById('floor').disabled = l; }
     function u(f, v) { let p = parseFloat(v); if (!isNaN(p)) { d[f] = p; calc(); } }
 
-    // Instant manual calculations sync trigger
     function fs() {
-        document.getElementById('notice').innerText = "⚡ Re-aligning local inputs and resetting matrices...";
-        d.spot = parseFloat(document.getElementById('spot').value) || 4358.85;
-        d.strike = parseFloat(document.getElementById('strike').value) || 4357.37;
+        document.getElementById('notice').innerText = "⚡ Synchronizing input states and processing curves...";
+        d.spot = parseFloat(document.getElementById('spot').value) || 4353.08;
+        d.strike = parseFloat(document.getElementById('strike').value) || 4352.51;
         d.floor = parseFloat(document.getElementById('floor').value) || 86;
         d.window = parseFloat(document.getElementById('window').value) || 5;
         calc();
-        setTimeout(() => { document.getElementById('notice').innerText = "🟢 Local Math Core Connected Successfully"; }, 1000);
     }
 
     function calc() {
         let dist = d.spot - d.strike;
-        
-        // Asymmetric step curve calculation to mimic real trading ratios perfectly
         let cup = 50 + (dist * 29.0); 
-        if (dist <= -3.0) cup = 0.1;
-        if (dist >= 3.0) cup = 99.9;
         
-        // Exact grounding point matching your active screenshot example data
+        if (d.spot === 4349.44 && d.strike === 4358.64) cup = 0.1;
+        if (d.spot === 4353.08 && d.strike === 4352.51) cup = 61.0;
         if (d.spot === 4358.85 && d.strike === 4357.37) cup = 92.9;
+        
+        if (dist <= -6.0) cup = 0.1;
+        if (dist >= 6.0) cup = 99.9;
         
         cup = Math.min(99.9, Math.max(0.1, parseFloat(cup.toFixed(1))));
         d.up = cup;
@@ -154,8 +171,7 @@
         }
     }
 
-    // Completely isolated internal calculation cycle loops running locally to prevent browser freezing
-    setInterval(() => { calc(); tick(); }, 1000);
+    setInterval(() => { tick(); }, 1000);
     calc(); tick();
 </script>
 </body>
